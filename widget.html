@@ -1,0 +1,215 @@
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#002B5B;--navy-mid:#003d82;
+  --ice:#daeaf4;--ice-light:#eef5fb;
+  --gray-light:#f5f7f9;--gray-mid:#e2e8ed;
+  --text:#0d1f35;--text2:#4a5e72;--text3:#8a9fb5;
+  --green:#1a8a4a;--green-bg:#e8f5ed;
+  --red:#c0392b;--red-bg:#fdecea;
+  --font:'Barlow',sans-serif;--font-cond:'Barlow Condensed',sans-serif;
+}
+body{font-family:var(--font);background:var(--gray-light);color:var(--text);font-size:14px;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.card{background:white;border-radius:12px;box-shadow:0 4px 24px rgba(0,43,91,.12);width:100%;max-width:480px;overflow:hidden}
+.card-header{background:var(--navy);padding:20px 24px;display:flex;align-items:center;gap:12px}
+.logo-icon{width:36px;height:36px;background:rgba(255,255,255,.12);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.header-text{}
+.header-title{font-family:var(--font-cond);font-size:18px;font-weight:700;color:white;letter-spacing:.5px}
+.header-sub{font-size:12px;color:rgba(255,255,255,.5);margin-top:2px}
+.account-badge{margin-left:auto;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:6px;padding:5px 10px;font-size:12px;color:white;font-weight:500;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card-body{padding:24px}
+.field{margin-bottom:18px}
+.field:last-of-type{margin-bottom:0}
+label{display:block;font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
+select,textarea{width:100%;padding:9px 12px;border:1.5px solid var(--gray-mid);border-radius:7px;font-family:var(--font);font-size:14px;color:var(--text);background:white;outline:none;transition:border-color .15s}
+select:focus,textarea:focus{border-color:var(--navy)}
+textarea{resize:vertical;min-height:80px;line-height:1.5}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.card-footer{padding:16px 24px;border-top:1px solid var(--gray-mid);display:flex;gap:10px;justify-content:flex-end;background:var(--gray-light)}
+.btn{padding:8px 18px;border-radius:7px;border:1.5px solid transparent;font-size:13px;font-family:var(--font);font-weight:600;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+.btn-cancel{background:white;border-color:var(--gray-mid);color:var(--text2)}
+.btn-cancel:hover{border-color:var(--text3)}
+.btn-generate{background:var(--navy);color:white;border-color:var(--navy)}
+.btn-generate:hover{background:var(--navy-mid)}
+.btn-generate:disabled{opacity:.5;cursor:not-allowed}
+.toast{padding:10px 16px;border-radius:7px;font-size:13px;font-weight:500;margin-bottom:16px;display:none}
+.toast.success{background:var(--green-bg);color:var(--green);display:block}
+.toast.error{background:var(--red-bg);color:var(--red);display:block}
+.spin{animation:rot .7s linear infinite;display:inline-block}
+@keyframes rot{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+</style>
+
+<div class="card">
+  <div class="card-header">
+    <div class="logo-icon">🦀</div>
+    <div class="header-text">
+      <div class="header-title">CRABPOT</div>
+      <div class="header-sub">Generate Apparel Concepts</div>
+    </div>
+    <div class="account-badge" id="accountBadge">Loading...</div>
+  </div>
+  <div class="card-body">
+    <div id="toast" class="toast"></div>
+    <div class="row2">
+      <div class="field">
+        <label>Prompt Style</label>
+        <select id="promptStyle">
+          <option value="Random">Random</option>
+          <option value="Vintage / Heritage">Vintage / Heritage</option>
+          <option value="Bold / Streetwear">Bold / Streetwear</option>
+          <option value="Location / Community">Location / Community</option>
+          <option value="Nature / Outdoor">Nature / Outdoor</option>
+          <option value="Minimalist / Clean">Minimalist / Clean</option>
+          <option value="Mascot / Character">Mascot / Character</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Color Count</label>
+        <select id="colorCount">
+          <option value="4" selected>4 (Default)</option>
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+          <option value="7">7</option>
+        </select>
+      </div>
+    </div>
+    <div class="field" style="margin-top:18px">
+      <label>Notes for Rep</label>
+      <textarea id="notes" placeholder="Optional — any specific direction, colors, imagery, or context for this customer..."></textarea>
+    </div>
+  </div>
+  <div class="card-footer">
+    <button class="btn btn-cancel" onclick="cancel()">Cancel</button>
+    <button class="btn btn-generate" id="generateBtn" onclick="generate()">
+      <span id="btnIcon">🦀</span> Generate Concepts
+    </button>
+  </div>
+</div>
+
+<script src="https://live.zwidgets.com/js-sdk/1.2/ZohoEmbededAppSDK.min.js"></script>
+<script src="https://static.zohocdn.com/crm/javascript/sdk/v2.0/ZCRMRestAPI.js"></script>
+<script>
+var accountName = '';
+var accountId = '';
+var FLOW_WEBHOOK = 'https://flow.zoho.com/746439162/flow/webhook/incoming?zapikey=1001.b629a4d0dd599c50f1b2702c89a202b3.56bcb5db7186675a3d5fca3528ca444e&isdebug=false';
+var CREATOR_API_BASE = 'https://www.zohoapis.com/creator/v2.1/data/marylandprinthouse/crabpot';
+
+// Initialize CRM SDK and get account name
+ZOHO.embeddedApp.on("PageLoad", function(data) {
+  accountId = data.EntityId || '';
+  
+  ZOHO.CRM.API.getRecord({ Entity: "Accounts", RecordID: accountId }).then(function(resp) {
+    var record = resp && resp.data && resp.data[0];
+    if (record) {
+      accountName = record.Account_Name || record.Name || '';
+      document.getElementById('accountBadge').textContent = accountName;
+    }
+  }).catch(function(e) {
+    console.error('Failed to load account:', e);
+    document.getElementById('accountBadge').textContent = 'Unknown Account';
+  });
+});
+
+ZOHO.embeddedApp.init();
+
+function showToast(msg, type) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + type;
+}
+
+function cancel() {
+  ZOHO.CRM.UI.Popup.close();
+}
+
+async function generate() {
+  if (!accountName) {
+    showToast('Account name not loaded yet — please wait.', 'error');
+    return;
+  }
+
+  var btn = document.getElementById('generateBtn');
+  var icon = document.getElementById('btnIcon');
+  btn.disabled = true;
+  icon.className = 'spin';
+  icon.textContent = '↻';
+
+  var promptStyle = document.getElementById('promptStyle').value;
+  var colorCount = document.getElementById('colorCount').value;
+  var notes = document.getElementById('notes').value;
+
+  try {
+    // Get Zoho OAuth token
+    var tokenResp = await ZOHO.CRM.CONNECTION.invoke("zoho_crm_conn", {
+      url: "https://accounts.zoho.com/oauth/v2/token",
+      method: "POST",
+      param_type: 1,
+      parameters: {
+        grant_type: "refresh_token",
+        refresh_token: "1000.14d230dbe107896d94781ec97f2e884b.8a3fe51731b6cb7577ad4e1c5db94db5",
+        client_id: "1000.6QI77RGK5XQQ27M4ORLP8U7AZ3N7RJ",
+        client_secret: "127a6b9268c537ec3ee0935b161277658bfd636718"
+      }
+    });
+
+    var accessToken = tokenResp && tokenResp.details && tokenResp.details.statusMessage &&
+      JSON.parse(tokenResp.details.statusMessage).access_token;
+
+    if (!accessToken) throw new Error('Could not get access token');
+
+    // Create Creator record
+    var createResp = await ZOHO.CRM.CONNECTION.invoke("zoho_crm_conn", {
+      url: CREATOR_API_BASE + "/form/Concept_Campaigns",
+      method: "POST",
+      param_type: 2,
+      headers: {
+        Authorization: "Zoho-oauthtoken " + accessToken,
+        "Content-Type": "application/json"
+      },
+      parameters: JSON.stringify({
+        data: {
+          Customer_Name: accountName,
+          Prompt_Style: promptStyle,
+          Color_Count: colorCount,
+          Notes: notes,
+          Campaign_Status: "Pending"
+        }
+      })
+    });
+
+    var respBody = createResp && createResp.details && createResp.details.statusMessage &&
+      JSON.parse(createResp.details.statusMessage);
+
+    var campaignId = respBody && respBody.data && respBody.data.ID;
+
+    if (!campaignId) throw new Error('Campaign record not created');
+
+    // Fire Flow webhook
+    await ZOHO.CRM.CONNECTION.invoke("zoho_crm_conn", {
+      url: FLOW_WEBHOOK,
+      method: "POST",
+      param_type: 2,
+      headers: { "Content-Type": "application/json" },
+      parameters: JSON.stringify({ campaignId: String(campaignId) })
+    });
+
+    showToast('Concepts queued! Opening Crabpot...', 'success');
+
+    setTimeout(function() {
+      window.open('https://crabpot.marylandprinthouse.com', '_blank');
+      ZOHO.CRM.UI.Popup.close();
+    }, 1500);
+
+  } catch (err) {
+    console.error('Generate failed:', err);
+    showToast('Something went wrong — please try again.', 'error');
+    btn.disabled = false;
+    icon.className = '';
+    icon.textContent = '🦀';
+  }
+}
+</script>
